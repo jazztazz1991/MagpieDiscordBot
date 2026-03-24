@@ -1,0 +1,22 @@
+{
+  "name": "magpie-discord-bot",
+  "version": "1.0.0",
+  "description": "Discord bot for Magpie Industries Star Citizen organization",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts",
+    "deploy-commands": "ts-node src/utils/deployCommands.ts"
+  },
+  "dependencies": {
+    "discord.js": "^14.14.1",
+    "dotenv": "^16.4.1",
+    "pm2": "^6.0.14"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.5",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  }
+}

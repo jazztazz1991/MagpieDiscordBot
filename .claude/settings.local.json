@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npm run:*)",
+      "Bash(curl -s \"https://api.starcitizen-api.com/v1/eager/user/lanugginoso\")",
+      "Bash(curl -s \"https://api.starcitizen-api.com/v1/live/user/lanugginoso\")",
+      "Bash(curl -s \"https://robertsspaceindustries.com/api/spectrum/search/member/autocomplete\" -X POST -H \"Content-Type: application/json\" -d '{\"\"\"\"community_id\"\"\"\":\"\"\"\"1\"\"\"\",\"\"\"\"text\"\"\"\":\"\"\"\"lanugginoso\"\"\"\"}')",
+      "Bash(curl -s \"https://robertsspaceindustries.com/citizens/lanugginoso\" -H \"Accept: text/html\" -o /dev/null -w \"%{http_code}\")",
+      "Bash(curl -s \"https://robertsspaceindustries.com/api/orgs/getOrgs\" -X POST -H \"Content-Type: application/json\" -d '{\"\"\"\"symbol\"\"\"\":\"\"\"\"MAGPI\"\"\"\",\"\"\"\"search\"\"\"\":\"\"\"\"\"\"\"\"}')",
+      "Bash(python -m json.tool)",
+      "Bash(tasklist)",
+      "Bash(node -e \":*)",
+      "Bash(taskkill //F //IM node.exe)",
+      "Read(//c/Users/jazz_/.ssh/**)",
+      "Bash(ssh -o StrictHostKeyChecking=accept-new ubuntu@150.136.251.234 \"echo ''Connected successfully!''\")",
+      "Bash(ssh -o StrictHostKeyChecking=accept-new -i ~/.ssh/id_rsa ubuntu@150.136.251.234 \"echo ''Connected successfully!''\")",
+      "Bash(ssh -o StrictHostKeyChecking=accept-new -i ~/.ssh/id_rsa opc@150.136.251.234 \"echo ''Connected successfully!''\")",
+      "Bash(ssh -v -o StrictHostKeyChecking=accept-new ubuntu@150.136.251.234 \"echo hi\")",
+      "Bash(ssh-keygen -lf ~/.ssh/id_rsa.pub)"
+    ]
+  }
+}
