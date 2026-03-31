@@ -36,6 +36,7 @@ export const orderCommand: Command = {
               { name: 'Refining', value: 'Refining' },
               { name: 'Pending Delivery', value: 'Pending Delivery' },
               { name: 'Delivered', value: 'Delivered' },
+              { name: 'Cancelled', value: 'Cancelled' },
             )
         )
     )

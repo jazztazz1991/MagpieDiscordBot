@@ -8,7 +8,8 @@ export type OrderStatus =
   | 'Searching'
   | 'Refining'
   | 'Pending Delivery'
-  | 'Delivered';
+  | 'Delivered'
+  | 'Cancelled';
 
 export interface Order {
   id: number;
@@ -104,10 +105,11 @@ export function getActiveOrders(guildId: string): Order[] {
   return data.orders.filter((o) => o.guildId === guildId && shown.includes(o.status));
 }
 
-/** Admin board: all non-delivered orders (Placed through Pending Delivery) */
+/** Admin board: all active orders (excludes Delivered and Cancelled) */
 export function getAllOrders(guildId: string): Order[] {
   const data = load();
-  return data.orders.filter((o) => o.guildId === guildId && o.status !== 'Delivered');
+  const hidden: OrderStatus[] = ['Delivered', 'Cancelled'];
+  return data.orders.filter((o) => o.guildId === guildId && !hidden.includes(o.status));
 }
 
 /** Queue position: count of accepted, non-delivered orders ahead of this one */
