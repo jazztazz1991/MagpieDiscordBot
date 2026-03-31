@@ -17,6 +17,6 @@ jobs:
           script: |
             cd ~/MagpieDiscordBot
             git pull origin main
-            npm install --production
+            npm install
             npm run build
             npx pm2 restart magpie-bot
