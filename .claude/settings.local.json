@@ -21,6 +21,9 @@
       "Bash(ssh-keygen -lf ~/.ssh/id_rsa.pub)",
       "Bash(gh auth:*)",
       "Bash(where git:*)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\jazz_\\Desktop\\Web Development Projects\\portfolioProjects\\MagpieDiscordBot\\.github"
     ]
   }
 }
