@@ -9,6 +9,8 @@ import { eventAdminCommand } from '../commands/eventadmin';
 import { modCommand } from '../commands/mod';
 import { lookupCommand } from '../commands/lookup';
 import { nestPingsCommand } from '../commands/nestpings';
+import { orderSetupCommand } from '../commands/ordersetup';
+import { orderCommand } from '../commands/order';
 
 const commands = [
   pingCommand.data.toJSON(),
@@ -19,6 +21,8 @@ const commands = [
   modCommand.data.toJSON(),
   lookupCommand.data.toJSON(),
   nestPingsCommand.data.toJSON(),
+  orderSetupCommand.data.toJSON(),
+  orderCommand.data.toJSON(),
 ];
 
 const rest = new REST({ version: '10' }).setToken(config.token);
