@@ -1,22 +1,15 @@
 import {
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
   ChatInputCommandInteraction,
   EmbedBuilder,
   PermissionFlagsBits,
   SlashCommandBuilder,
 } from 'discord.js';
 import { Command } from '../types';
-import { getAllOrders, getOrder, getQueuePosition, OrderStatus, updateOrderStatus } from '../utils/orderStore';
+import { getAllOrders, getOrder, getQueuePosition, OrderStatus, quoteOrder, updateOrderStatus } from '../utils/orderStore';
 import { refreshActiveOrdersMessage } from '../utils/orderEmbed';
-
-const VALID_STATUSES: OrderStatus[] = [
-  'Placed',
-  'Not Accepted',
-  'Accepted',
-  'Searching',
-  'Refining',
-  'Pending Delivery',
-  'Delivered',
-];
 
 export const orderCommand: Command = {
   data: new SlashCommandBuilder()
@@ -44,6 +37,17 @@ export const orderCommand: Command = {
               { name: 'Pending Delivery', value: 'Pending Delivery' },
               { name: 'Delivered', value: 'Delivered' },
             )
+        )
+    )
+    .addSubcommand((sub) =>
+      sub
+        .setName('quote')
+        .setDescription('Send a price quote to the customer')
+        .addIntegerOption((opt) =>
+          opt.setName('order_id').setDescription('The order number').setRequired(true)
+        )
+        .addStringOption((opt) =>
+          opt.setName('price').setDescription('The quoted price (e.g. "50,000 aUEC")').setRequired(true)
         )
     )
     .addSubcommand((sub) =>
@@ -88,10 +92,67 @@ export const orderCommand: Command = {
         }
         await user.send(dmMessage);
       } catch {
-        // User may have DMs closed, that's fine
+        // User may have DMs closed
       }
 
-      // Refresh the active orders board
+      await refreshActiveOrdersMessage(interaction.client, interaction.guildId!);
+
+    } else if (sub === 'quote') {
+      const orderId = interaction.options.getInteger('order_id', true);
+      const price = interaction.options.getString('price', true);
+
+      const order = quoteOrder(orderId, price, interaction.user.id);
+      if (!order) {
+        await interaction.reply({ content: `Order #${orderId} not found.`, ephemeral: true });
+        return;
+      }
+
+      // DM the customer with Accept/Deny/Counter buttons
+      try {
+        const user = await interaction.client.users.fetch(order.customerId);
+
+        const embed = new EmbedBuilder()
+          .setTitle(`Quote for Order #${order.id}`)
+          .setDescription(
+            `**Items:** ${order.items}\n` +
+            `**Quantity:** ${order.quantity}\n` +
+            (order.quality ? `**Quality:** ${order.quality}\n` : '') +
+            `\n**Quoted Price: ${price}**`
+          )
+          .setColor(0xe67e22)
+          .setFooter({ text: 'Magpie Industries' });
+
+        if (order.counterPrice) {
+          embed.addFields({ name: 'Your Previous Counter', value: order.counterPrice });
+        }
+
+        const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
+          new ButtonBuilder()
+            .setCustomId(`quote_accept_${order.id}`)
+            .setLabel('Accept')
+            .setStyle(ButtonStyle.Success),
+          new ButtonBuilder()
+            .setCustomId(`quote_deny_${order.id}`)
+            .setLabel('Deny')
+            .setStyle(ButtonStyle.Danger),
+          new ButtonBuilder()
+            .setCustomId(`quote_counter_${order.id}`)
+            .setLabel('Counter')
+            .setStyle(ButtonStyle.Secondary),
+        );
+
+        await user.send({ embeds: [embed], components: [row] });
+        await interaction.reply({
+          content: `Quote of **${price}** sent to **${order.customerName}** for order **#${order.id}**.`,
+          ephemeral: true,
+        });
+      } catch {
+        await interaction.reply({
+          content: `Quote saved but couldn't DM the customer — they may have DMs closed.`,
+          ephemeral: true,
+        });
+      }
+
       await refreshActiveOrdersMessage(interaction.client, interaction.guildId!);
 
     } else if (sub === 'view') {
@@ -117,6 +178,12 @@ export const orderCommand: Command = {
       if (order.quality) {
         embed.addFields({ name: 'Quality', value: order.quality, inline: true });
       }
+      if (order.quotedPrice) {
+        embed.addFields({ name: 'Quoted Price', value: order.quotedPrice, inline: true });
+      }
+      if (order.counterPrice) {
+        embed.addFields({ name: 'Customer Counter', value: order.counterPrice, inline: true });
+      }
       if (order.notes) {
         embed.addFields({ name: 'Notes', value: order.notes, inline: false });
       }
@@ -134,7 +201,8 @@ export const orderCommand: Command = {
       const lines = orders.map((o) => {
         const qty = o.quantity ? ` x${o.quantity}` : '';
         const qual = o.quality ? ` [${o.quality}]` : '';
-        return `**#${o.id}** — ${o.customerName} — ${o.items}${qty}${qual} · \`${o.status}\``;
+        const price = o.quotedPrice ? ` | ${o.quotedPrice}` : '';
+        return `**#${o.id}** — ${o.customerName} — ${o.items}${qty}${qual}${price} · \`${o.status}\``;
       });
 
       const embed = new EmbedBuilder()

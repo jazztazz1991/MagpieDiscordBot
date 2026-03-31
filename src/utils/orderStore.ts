@@ -2,6 +2,7 @@ import { loadJson, saveJson } from './data';
 
 export type OrderStatus =
   | 'Placed'
+  | 'Quoted'
   | 'Not Accepted'
   | 'Accepted'
   | 'Searching'
@@ -20,6 +21,9 @@ export interface Order {
   status: OrderStatus;
   guildId: string;
   createdAt: string;
+  quotedPrice: string | null;
+  quotedBy: string | null;
+  counterPrice: string | null;
 }
 
 interface OrderData {
@@ -45,13 +49,16 @@ function save(data: OrderData) {
   saveJson(FILE, data);
 }
 
-export function createOrder(order: Omit<Order, 'id' | 'status' | 'createdAt'>): Order {
+export function createOrder(order: Omit<Order, 'id' | 'status' | 'createdAt' | 'quotedPrice' | 'quotedBy' | 'counterPrice'>): Order {
   const data = load();
   const newOrder: Order = {
     ...order,
     id: data.nextId,
     status: 'Placed',
     createdAt: new Date().toISOString(),
+    quotedPrice: null,
+    quotedBy: null,
+    counterPrice: null,
   };
   data.nextId++;
   data.orders.push(newOrder);
@@ -64,6 +71,28 @@ export function updateOrderStatus(orderId: number, status: OrderStatus): Order |
   const order = data.orders.find((o) => o.id === orderId);
   if (!order) return null;
   order.status = status;
+  save(data);
+  return order;
+}
+
+export function quoteOrder(orderId: number, price: string, quotedBy: string): Order | null {
+  const data = load();
+  const order = data.orders.find((o) => o.id === orderId);
+  if (!order) return null;
+  order.status = 'Quoted';
+  order.quotedPrice = price;
+  order.quotedBy = quotedBy;
+  order.counterPrice = null;
+  save(data);
+  return order;
+}
+
+export function counterOrder(orderId: number, counterPrice: string): Order | null {
+  const data = load();
+  const order = data.orders.find((o) => o.id === orderId);
+  if (!order) return null;
+  order.counterPrice = counterPrice;
+  order.status = 'Placed'; // Back to placed for admin to re-quote
   save(data);
   return order;
 }
