@@ -68,10 +68,24 @@ export function updateOrderStatus(orderId: number, status: OrderStatus): Order |
   return order;
 }
 
+/** Public board: only accepted through pending delivery */
 export function getActiveOrders(guildId: string): Order[] {
   const data = load();
-  const hidden: OrderStatus[] = ['Not Accepted', 'Delivered'];
-  return data.orders.filter((o) => o.guildId === guildId && !hidden.includes(o.status));
+  const shown: OrderStatus[] = ['Accepted', 'Searching', 'Refining', 'Pending Delivery'];
+  return data.orders.filter((o) => o.guildId === guildId && shown.includes(o.status));
+}
+
+/** Admin board: all non-delivered orders (Placed through Pending Delivery) */
+export function getAllOrders(guildId: string): Order[] {
+  const data = load();
+  return data.orders.filter((o) => o.guildId === guildId && o.status !== 'Delivered');
+}
+
+/** Queue position: count of accepted, non-delivered orders ahead of this one */
+export function getQueuePosition(orderId: number, guildId: string): number {
+  const active = getActiveOrders(guildId);
+  const index = active.findIndex((o) => o.id === orderId);
+  return index === -1 ? active.length : index + 1;
 }
 
 export function getOrder(orderId: number): Order | null {

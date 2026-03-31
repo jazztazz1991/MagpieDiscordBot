@@ -5,7 +5,7 @@ import {
   SlashCommandBuilder,
 } from 'discord.js';
 import { Command } from '../types';
-import { getOrder, OrderStatus, updateOrderStatus } from '../utils/orderStore';
+import { getAllOrders, getOrder, getQueuePosition, OrderStatus, updateOrderStatus } from '../utils/orderStore';
 import { refreshActiveOrdersMessage } from '../utils/orderEmbed';
 
 const VALID_STATUSES: OrderStatus[] = [
@@ -53,6 +53,11 @@ export const orderCommand: Command = {
         .addIntegerOption((opt) =>
           opt.setName('order_id').setDescription('The order number').setRequired(true)
         )
+    )
+    .addSubcommand((sub) =>
+      sub
+        .setName('board')
+        .setDescription('View all orders (Placed through Pending Delivery)')
     ),
 
   async execute(interaction: ChatInputCommandInteraction) {
@@ -76,9 +81,12 @@ export const orderCommand: Command = {
       // DM the customer about the status change
       try {
         const user = await interaction.client.users.fetch(order.customerId);
-        await user.send(
-          `Your Magpie Industries order **#${order.id}** (${order.items}) has been updated to: **${newStatus}**`
-        );
+        let dmMessage = `Your Magpie Industries order **#${order.id}** (${order.items}) has been updated to: **${newStatus}**`;
+        if (newStatus === 'Accepted') {
+          const position = getQueuePosition(order.id, interaction.guildId!);
+          dmMessage += `\nYou are **#${position}** in the queue.`;
+        }
+        await user.send(dmMessage);
       } catch {
         // User may have DMs closed, that's fine
       }
@@ -112,6 +120,29 @@ export const orderCommand: Command = {
       if (order.notes) {
         embed.addFields({ name: 'Notes', value: order.notes, inline: false });
       }
+
+      await interaction.reply({ embeds: [embed], ephemeral: true });
+
+    } else if (sub === 'board') {
+      const orders = getAllOrders(interaction.guildId!);
+
+      if (orders.length === 0) {
+        await interaction.reply({ content: 'No active orders.', ephemeral: true });
+        return;
+      }
+
+      const lines = orders.map((o) => {
+        const qty = o.quantity ? ` x${o.quantity}` : '';
+        const qual = o.quality ? ` [${o.quality}]` : '';
+        return `**#${o.id}** — ${o.customerName} — ${o.items}${qty}${qual} · \`${o.status}\``;
+      });
+
+      const embed = new EmbedBuilder()
+        .setTitle('All Orders (Admin View)')
+        .setDescription(lines.join('\n'))
+        .setColor(0xe67e22)
+        .setFooter({ text: `${orders.length} order(s)` })
+        .setTimestamp();
 
       await interaction.reply({ embeds: [embed], ephemeral: true });
     }
