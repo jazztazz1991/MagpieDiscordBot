@@ -11,6 +11,7 @@ import { lookupCommand } from '../commands/lookup';
 import { nestPingsCommand } from '../commands/nestpings';
 import { orderSetupCommand } from '../commands/ordersetup';
 import { orderCommand } from '../commands/order';
+import { debtCommand } from '../commands/debt';
 
 const commands = [
   pingCommand.data.toJSON(),
@@ -23,6 +24,7 @@ const commands = [
   nestPingsCommand.data.toJSON(),
   orderSetupCommand.data.toJSON(),
   orderCommand.data.toJSON(),
+  debtCommand.data.toJSON(),
 ];
 
 const rest = new REST({ version: '10' }).setToken(config.token);

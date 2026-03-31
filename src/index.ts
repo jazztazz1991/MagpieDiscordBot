@@ -18,6 +18,7 @@ import { lookupCommand } from './commands/lookup';
 import { nestPingsCommand } from './commands/nestpings';
 import { orderSetupCommand } from './commands/ordersetup';
 import { orderCommand } from './commands/order';
+import { debtCommand } from './commands/debt';
 
 // Import event handlers
 import { handleReady } from './events/ready';
@@ -54,6 +55,7 @@ const commandList: Command[] = [
   nestPingsCommand,
   orderSetupCommand,
   orderCommand,
+  debtCommand,
 ];
 
 for (const command of commandList) {
