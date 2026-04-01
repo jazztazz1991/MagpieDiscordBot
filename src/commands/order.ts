@@ -172,13 +172,8 @@ export const orderCommand: Command = {
           { name: 'Customer', value: order.customerName, inline: true },
           { name: 'Status', value: order.status, inline: true },
           { name: 'Items', value: order.items, inline: false },
-          { name: 'Quantity', value: order.quantity, inline: true },
         )
         .setFooter({ text: `Placed ${new Date(order.createdAt).toLocaleDateString()}` });
-
-      if (order.quality) {
-        embed.addFields({ name: 'Quality', value: order.quality, inline: true });
-      }
       if (order.quotedPrice) {
         embed.addFields({ name: 'Quoted Price', value: order.quotedPrice, inline: true });
       }
@@ -200,15 +195,14 @@ export const orderCommand: Command = {
       }
 
       const lines = orders.map((o) => {
-        const qty = o.quantity ? ` x${o.quantity}` : '';
-        const qual = o.quality ? ` [${o.quality}]` : '';
         const price = o.quotedPrice ? ` | ${o.quotedPrice}` : '';
-        return `**#${o.id}** — ${o.customerName} — ${o.items}${qty}${qual}${price} · \`${o.status}\``;
+        const itemsSummary = o.items.split('\n').map((line) => `  ${line.trim()}`).join('\n');
+        return `**#${o.id}** — ${o.customerName}${price} · \`${o.status}\`\n${itemsSummary}`;
       });
 
       const embed = new EmbedBuilder()
         .setTitle('All Orders (Admin View)')
-        .setDescription(lines.join('\n'))
+        .setDescription(lines.join('\n\n'))
         .setColor(0xe67e22)
         .setFooter({ text: `${orders.length} order(s)` })
         .setTimestamp();

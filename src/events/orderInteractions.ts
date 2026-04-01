@@ -46,27 +46,11 @@ async function handlePlaceOrderButton(interaction: ButtonInteraction) {
 
   const items = new TextInputBuilder()
     .setCustomId('items')
-    .setLabel('Item(s) Requested')
-    .setStyle(TextInputStyle.Short)
+    .setLabel('Item(s) — one per line')
+    .setStyle(TextInputStyle.Paragraph)
     .setRequired(true)
-    .setPlaceholder('e.g. Quantanium, Laranite, Medical Supplies')
-    .setMaxLength(200);
-
-  const quantity = new TextInputBuilder()
-    .setCustomId('quantity')
-    .setLabel('Quantity')
-    .setStyle(TextInputStyle.Short)
-    .setRequired(true)
-    .setPlaceholder('e.g. 32 SCU, 100 units')
-    .setMaxLength(50);
-
-  const quality = new TextInputBuilder()
-    .setCustomId('quality')
-    .setLabel('Quality (if applicable)')
-    .setStyle(TextInputStyle.Short)
-    .setRequired(false)
-    .setPlaceholder('e.g. Grade A, Raw, Refined')
-    .setMaxLength(50);
+    .setPlaceholder('Quantanium x32 SCU, Grade A\nLaranite x10 SCU\nMedical Supplies x5')
+    .setMaxLength(500);
 
   const notes = new TextInputBuilder()
     .setCustomId('notes')
@@ -79,8 +63,6 @@ async function handlePlaceOrderButton(interaction: ButtonInteraction) {
   modal.addComponents(
     new ActionRowBuilder<TextInputBuilder>().addComponents(customerName),
     new ActionRowBuilder<TextInputBuilder>().addComponents(items),
-    new ActionRowBuilder<TextInputBuilder>().addComponents(quantity),
-    new ActionRowBuilder<TextInputBuilder>().addComponents(quality),
     new ActionRowBuilder<TextInputBuilder>().addComponents(notes),
   );
 
@@ -191,24 +173,21 @@ export async function handleOrderModalSubmit(interaction: ModalSubmitInteraction
 async function handleNewOrderSubmit(interaction: ModalSubmitInteraction) {
   const customerName = interaction.fields.getTextInputValue('customer_name');
   const items = interaction.fields.getTextInputValue('items');
-  const quantity = interaction.fields.getTextInputValue('quantity');
-  const quality = interaction.fields.getTextInputValue('quality') || '';
   const notes = interaction.fields.getTextInputValue('notes') || '';
 
   const order = createOrder({
     customerName,
     customerId: interaction.user.id,
     items,
-    quantity,
-    quality,
+    quantity: '',
+    quality: '',
     notes,
     guildId: interaction.guildId!,
   });
 
   await interaction.reply({
     content: `Order **#${order.id}** placed! You'll receive a DM when the status changes.\n\n` +
-      `**Items:** ${items}\n**Quantity:** ${quantity}` +
-      (quality ? `\n**Quality:** ${quality}` : '') +
+      `**Items:**\n${items}` +
       (notes ? `\n**Notes:** ${notes}` : ''),
     ephemeral: true,
   });

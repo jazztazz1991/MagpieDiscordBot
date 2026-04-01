@@ -16,12 +16,11 @@ export function buildActiveOrdersEmbed(guildId: string): EmbedBuilder {
   }
 
   const lines = orders.map((o) => {
-    const qty = o.quantity ? ` x${o.quantity}` : '';
-    const qual = o.quality ? ` [${o.quality}]` : '';
-    return `**#${o.id}** — ${o.items}${qty}${qual} ・ \`${o.status}\``;
+    const itemsSummary = o.items.split('\n').map((line) => `  ${line.trim()}`).join('\n');
+    return `**#${o.id}** · \`${o.status}\`\n${itemsSummary}`;
   });
 
-  embed.setDescription(lines.join('\n'));
+  embed.setDescription(lines.join('\n\n'));
   return embed;
 }
 
