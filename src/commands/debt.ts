@@ -36,6 +36,12 @@ export const debtCommand: Command = {
       sub
         .setName('ledger')
         .setDescription('View all outstanding debts (admin only)')
+    )
+    .addSubcommand((sub) =>
+      sub
+        .setName('history')
+        .setDescription('View all transactions for a user (admin only)')
+        .addUserOption((opt) => opt.setName('user').setDescription('The user').setRequired(true))
     ),
 
   async execute(interaction: ChatInputCommandInteraction) {
@@ -119,6 +125,42 @@ export const debtCommand: Command = {
         .setDescription(lines.join('\n'))
         .setColor(0xe67e22)
         .setFooter({ text: `Total: ${total.toLocaleString()} aUEC | ${debts.length} user(s)` })
+        .setTimestamp();
+
+      await interaction.reply({ embeds: [embed], ephemeral: true });
+
+    } else if (sub === 'history') {
+      if (!interaction.memberPermissions?.has(PermissionFlagsBits.ManageGuild)) {
+        await interaction.reply({ content: 'You need Manage Server permission to use this.', ephemeral: true });
+        return;
+      }
+
+      const target = interaction.options.getUser('user', true);
+      const debt = getUserDebt(target.id, interaction.guildId!);
+
+      if (!debt || debt.ledger.length === 0) {
+        await interaction.reply({ content: `No transactions found for **${target.username}**.`, ephemeral: true });
+        return;
+      }
+
+      const lines = debt.ledger.map((e) => {
+        const sign = e.amount > 0 ? '+' : '';
+        const timestamp = `<t:${Math.floor(new Date(e.date).getTime() / 1000)}:f>`;
+        return `${sign}${e.amount.toLocaleString()} aUEC — ${e.reason} — ${timestamp}`;
+      });
+
+      // Discord embed description max is 4096 chars, truncate if needed
+      let description = lines.join('\n');
+      if (description.length > 4000) {
+        const truncated = lines.slice(-30);
+        description = `*Showing last 30 of ${lines.length} transactions*\n\n` + truncated.join('\n');
+      }
+
+      const embed = new EmbedBuilder()
+        .setTitle(`Debt History — ${target.username}`)
+        .setDescription(description)
+        .setColor(debt.balance > 0 ? 0xed4245 : 0x57f287)
+        .setFooter({ text: `Balance: ${debt.balance.toLocaleString()} aUEC | ${debt.ledger.length} transaction(s)` })
         .setTimestamp();
 
       await interaction.reply({ embeds: [embed], ephemeral: true });
