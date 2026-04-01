@@ -96,7 +96,7 @@ export const orderCommand: Command = {
         // User may have DMs closed
       }
 
-      await refreshActiveOrdersMessage(interaction.client, interaction.guildId!);
+      refreshActiveOrdersMessage(interaction.client, interaction.guildId!);
 
     } else if (sub === 'quote') {
       const orderId = interaction.options.getInteger('order_id', true);
@@ -154,7 +154,7 @@ export const orderCommand: Command = {
         });
       }
 
-      await refreshActiveOrdersMessage(interaction.client, interaction.guildId!);
+      refreshActiveOrdersMessage(interaction.client, interaction.guildId!);
 
     } else if (sub === 'view') {
       const orderId = interaction.options.getInteger('order_id', true);

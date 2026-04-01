@@ -24,20 +24,25 @@ export function buildActiveOrdersEmbed(guildId: string): EmbedBuilder {
   return embed;
 }
 
-export async function refreshActiveOrdersMessage(client: Client, guildId: string) {
+/** Fire-and-forget refresh — does not block the caller */
+export function refreshActiveOrdersMessage(client: Client, guildId: string) {
   const info = getActiveOrdersMessageInfo();
   if (!info.channelId || !info.messageId) return;
 
-  try {
-    const channel = await client.channels.fetch(info.channelId);
-    if (!channel || !(channel instanceof TextChannel)) return;
-
-    const message = await channel.messages.fetch(info.messageId);
-    const embed = buildActiveOrdersEmbed(guildId);
-    await message.edit({ embeds: [embed] });
-  } catch (error) {
+  // Run in background, don't block
+  doRefresh(client, guildId, info.channelId, info.messageId).catch((error) => {
     console.error('Failed to refresh active orders message:', error);
-  }
+  });
+}
+
+async function doRefresh(client: Client, guildId: string, channelId: string, messageId: string) {
+  const channel = client.channels.cache.get(channelId) as TextChannel | undefined
+    ?? await client.channels.fetch(channelId) as TextChannel | null;
+  if (!channel || !(channel instanceof TextChannel)) return;
+
+  const message = await channel.messages.fetch(messageId);
+  const embed = buildActiveOrdersEmbed(guildId);
+  await message.edit({ embeds: [embed] });
 }
 
 export async function createActiveOrdersMessage(channel: TextChannel, guildId: string) {

@@ -100,11 +100,7 @@ async function handleQuoteAccept(interaction: ButtonInteraction, orderId: number
     }
   }
 
-  // Refresh board
-  const guild = interaction.client.guilds.cache.find((g) => g.id === order.guildId);
-  if (guild) {
-    await refreshActiveOrdersMessage(interaction.client, order.guildId);
-  }
+  refreshActiveOrdersMessage(interaction.client, order.guildId);
 }
 
 async function handleQuoteDeny(interaction: ButtonInteraction, orderId: number) {
@@ -134,7 +130,7 @@ async function handleQuoteDeny(interaction: ButtonInteraction, orderId: number) 
     }
   }
 
-  await refreshActiveOrdersMessage(interaction.client, order.guildId);
+  refreshActiveOrdersMessage(interaction.client, order.guildId);
 }
 
 async function handleQuoteCounter(interaction: ButtonInteraction, orderId: number) {
@@ -192,7 +188,7 @@ async function handleNewOrderSubmit(interaction: ModalSubmitInteraction) {
     ephemeral: true,
   });
 
-  await refreshActiveOrdersMessage(interaction.client, interaction.guildId!);
+  refreshActiveOrdersMessage(interaction.client, interaction.guildId!);
 }
 
 async function handleCounterSubmit(interaction: ModalSubmitInteraction, orderId: number) {
@@ -222,5 +218,5 @@ async function handleCounterSubmit(interaction: ModalSubmitInteraction, orderId:
     }
   }
 
-  await refreshActiveOrdersMessage(interaction.client, order.guildId);
+  refreshActiveOrdersMessage(interaction.client, order.guildId);
 }
