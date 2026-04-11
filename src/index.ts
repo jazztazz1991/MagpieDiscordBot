@@ -19,6 +19,7 @@ import { nestPingsCommand } from './commands/nestpings';
 import { orderSetupCommand } from './commands/ordersetup';
 import { orderCommand } from './commands/order';
 import { debtCommand } from './commands/debt';
+import { identityPingsCommand } from './commands/identitypings';
 
 // Import event handlers
 import { handleReady } from './events/ready';
@@ -56,6 +57,7 @@ const commandList: Command[] = [
   orderSetupCommand,
   orderCommand,
   debtCommand,
+  identityPingsCommand,
 ];
 
 for (const command of commandList) {
