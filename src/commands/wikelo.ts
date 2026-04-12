@@ -49,6 +49,9 @@ export const wikeloCommand: Command = {
     )
     .addSubcommand((sub) =>
       sub.setName('projects').setDescription('List your active Wikelo projects')
+    )
+    .addSubcommand((sub) =>
+      sub.setName('wake').setDescription('Wake up the Magpie Industries site (Render cold start)')
     ),
 
   async execute(interaction: ChatInputCommandInteraction) {
@@ -163,6 +166,21 @@ export const wikeloCommand: Command = {
           }
 
           await interaction.editReply({ embeds: [embed] });
+          break;
+        }
+
+        case 'wake': {
+          await interaction.deferReply();
+          const start = Date.now();
+
+          const res = await fetch(`${API_URL}/api/health`);
+          const elapsed = ((Date.now() - start) / 1000).toFixed(1);
+
+          if (res.ok) {
+            await interaction.editReply(`✅ Magpie Industries site is up! (responded in ${elapsed}s)`);
+          } else {
+            await interaction.editReply(`⚠️ Site responded with status ${res.status} after ${elapsed}s.`);
+          }
           break;
         }
 
