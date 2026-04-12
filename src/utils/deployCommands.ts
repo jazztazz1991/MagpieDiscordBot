@@ -13,6 +13,7 @@ import { orderSetupCommand } from '../commands/ordersetup';
 import { orderCommand } from '../commands/order';
 import { debtCommand } from '../commands/debt';
 import { identityPingsCommand } from '../commands/identitypings';
+import { wikeloCommand } from '../commands/wikelo';
 
 const commands = [
   pingCommand.data.toJSON(),
@@ -27,6 +28,7 @@ const commands = [
   orderCommand.data.toJSON(),
   debtCommand.data.toJSON(),
   identityPingsCommand.data.toJSON(),
+  wikeloCommand.data.toJSON(),
 ];
 
 const rest = new REST({ version: '10' }).setToken(config.token);

@@ -20,6 +20,7 @@ import { orderSetupCommand } from './commands/ordersetup';
 import { orderCommand } from './commands/order';
 import { debtCommand } from './commands/debt';
 import { identityPingsCommand } from './commands/identitypings';
+import { wikeloCommand } from './commands/wikelo';
 
 // Import event handlers
 import { handleReady } from './events/ready';
@@ -58,6 +59,7 @@ const commandList: Command[] = [
   orderCommand,
   debtCommand,
   identityPingsCommand,
+  wikeloCommand,
 ];
 
 for (const command of commandList) {
