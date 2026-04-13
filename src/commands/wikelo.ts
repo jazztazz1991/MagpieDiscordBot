@@ -143,29 +143,49 @@ export const wikeloCommand: Command = {
             return;
           }
 
-          const topItems = items
+          const allItems = items
             .filter((i: any) => i.remaining > 0)
-            .slice(0, 15)
-            .map((i: any) => {
-              const check = i.remaining <= 0 ? '✅' : '⬜';
-              return `${check} ${i.name}: **${i.collected}/${i.needed}**`;
-            })
-            .join('\n');
+            .map((i: any) => `⬜ ${i.name}: **${i.collected}/${i.needed}**`);
 
-          const embed = new EmbedBuilder()
-            .setColor(0x5b8def)
-            .setTitle(`Shopping List — ${overallProgress}%`)
-            .setDescription(
-              `**${projectCount}** active project${projectCount > 1 ? 's' : ''} · **${totalRemaining}** items remaining\n\n${topItems}`
-            )
-            .setFooter({ text: 'Magpie Industries — Wikelo Tracker' })
-            .setTimestamp();
+          const completedItems = items
+            .filter((i: any) => i.remaining <= 0)
+            .map((i: any) => `✅ ${i.name}: **${i.collected}/${i.needed}**`);
 
-          if (items.length > 15) {
-            embed.addFields({ name: '', value: `...and ${items.length - 15} more items`, inline: false });
+          const allLines = [...allItems, ...completedItems];
+          const header = `**${projectCount}** active project${projectCount > 1 ? 's' : ''} · **${totalRemaining}** items remaining\n`;
+
+          // Discord embed description max is 4096 chars — split into chunks if needed
+          const embeds: EmbedBuilder[] = [];
+          let current = header + '\n';
+          let isFirst = true;
+
+          for (const line of allLines) {
+            if (current.length + line.length + 1 > 3900) {
+              const embed = new EmbedBuilder()
+                .setColor(0x5b8def)
+                .setDescription(current);
+              if (isFirst) {
+                embed.setTitle(`Shopping List — ${overallProgress}%`);
+                isFirst = false;
+              }
+              embeds.push(embed);
+              current = '';
+            }
+            current += line + '\n';
           }
 
-          await interaction.editReply({ embeds: [embed] });
+          // Final embed with remaining content
+          const lastEmbed = new EmbedBuilder()
+            .setColor(0x5b8def)
+            .setDescription(current)
+            .setFooter({ text: 'Magpie Industries — Wikelo Tracker' })
+            .setTimestamp();
+          if (isFirst) {
+            lastEmbed.setTitle(`Shopping List — ${overallProgress}%`);
+          }
+          embeds.push(lastEmbed);
+
+          await interaction.editReply({ embeds: embeds.slice(0, 10) });
           break;
         }
 
