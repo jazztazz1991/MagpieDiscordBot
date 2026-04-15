@@ -20,7 +20,8 @@
       "Bash(ssh -v -o StrictHostKeyChecking=accept-new ubuntu@150.136.251.234 \"echo hi\")",
       "Bash(ssh-keygen -lf ~/.ssh/id_rsa.pub)",
       "Bash(gh auth:*)",
-      "Bash(where git:*)"
+      "Bash(where git:*)",
+      "Bash(ssh-keygen -y -f ~/.ssh/magpie_deploy -P \"\")"
     ],
     "additionalDirectories": [
       "c:\\Users\\jazz_\\Desktop\\Web Development Projects\\portfolioProjects\\MagpieDiscordBot\\.github"
