@@ -78,6 +78,14 @@ export const wikeloCommand: Command = {
       sub.setName('projects').setDescription('List your active Wikelo projects')
     )
     .addSubcommand((sub) =>
+      sub
+        .setName('project')
+        .setDescription('View details of a specific personal project')
+        .addStringOption((opt) =>
+          opt.setName('name').setDescription('Project name').setRequired(true)
+        )
+    )
+    .addSubcommand((sub) =>
       sub.setName('wake').setDescription('Wake up the Magpie Industries site (Render cold start)')
     )
     .addSubcommandGroup((grp) =>
@@ -120,6 +128,52 @@ export const wikeloCommand: Command = {
             )
             .addIntegerOption((opt) =>
               opt.setName('quantity').setDescription('How many to add').setRequired(true).setMinValue(1)
+            )
+            .addStringOption((opt) =>
+              opt.setName('group_name').setDescription('Group name (optional if you only have one group)')
+            )
+        )
+        .addSubcommand((sub) =>
+          sub
+            .setName('info')
+            .setDescription('Show group details, members, and invite code')
+            .addStringOption((opt) =>
+              opt.setName('group_name').setDescription('Group name (optional if you only have one group)')
+            )
+        )
+        .addSubcommand((sub) =>
+          sub
+            .setName('activity')
+            .setDescription('Show recent contribution activity for a group')
+            .addStringOption((opt) =>
+              opt.setName('group_name').setDescription('Group name (optional if you only have one group)')
+            )
+            .addIntegerOption((opt) =>
+              opt.setName('limit').setDescription('Number of entries to show (max 50)').setMinValue(1).setMaxValue(50)
+            )
+        )
+        .addSubcommand((sub) =>
+          sub
+            .setName('contributions')
+            .setDescription('Show who has contributed what to a group')
+            .addStringOption((opt) =>
+              opt.setName('group_name').setDescription('Group name (optional if you only have one group)')
+            )
+        )
+        .addSubcommand((sub) =>
+          sub
+            .setName('leave')
+            .setDescription('Leave a group (owners must delete instead)')
+            .addStringOption((opt) =>
+              opt.setName('group_name').setDescription('Group name (optional if you only have one group)')
+            )
+        )
+        .addSubcommand((sub) =>
+          sub
+            .setName('project')
+            .setDescription('View details of a specific group project')
+            .addStringOption((opt) =>
+              opt.setName('name').setDescription('Project name').setRequired(true)
             )
             .addStringOption((opt) =>
               opt.setName('group_name').setDescription('Group name (optional if you only have one group)')
@@ -339,6 +393,205 @@ export const wikeloCommand: Command = {
             await interaction.editReply({ embeds: [embed] });
             break;
           }
+
+          case 'info': {
+            const groupName = interaction.options.getString('group_name');
+            await interaction.deferReply();
+
+            const resolved = await resolveGroup(discordId, groupName);
+            if ('error' in resolved) {
+              await interaction.editReply(resolved.error);
+              return;
+            }
+
+            const res = await apiCall(`/api/discord-bot/groups/${resolved.id}/detail/${discordId}`);
+
+            if (!res.success) {
+              await interaction.editReply(`❌ ${res.error || 'Failed to fetch group details.'}`);
+              return;
+            }
+
+            const { name, inviteCode, ownerName, memberCount, members, projects } = res.data;
+            const memberLines = members
+              .map((m: any) => `${m.isOwner ? '👑' : '•'} ${m.username}`)
+              .join('\n');
+
+            const embed = new EmbedBuilder()
+              .setColor(0x5b8def)
+              .setTitle(name)
+              .setDescription(
+                `**Owner:** ${ownerName}\n**Invite Code:** \`${inviteCode}\`\n**Members:** ${memberCount}\n**Projects:** ${projects.length}`
+              )
+              .addFields({ name: 'Members', value: memberLines || 'No members.', inline: false })
+              .setFooter({ text: 'Magpie Industries — Wikelo Tracker' })
+              .setTimestamp();
+
+            await interaction.editReply({ embeds: [embed] });
+            break;
+          }
+
+          case 'activity': {
+            const groupName = interaction.options.getString('group_name');
+            const limit = interaction.options.getInteger('limit') ?? 20;
+            await interaction.deferReply();
+
+            const resolved = await resolveGroup(discordId, groupName);
+            if ('error' in resolved) {
+              await interaction.editReply(resolved.error);
+              return;
+            }
+
+            const res = await apiCall(`/api/discord-bot/groups/${resolved.id}/log/${discordId}?limit=${limit}`);
+
+            if (!res.success) {
+              await interaction.editReply(`❌ ${res.error || 'Failed to fetch activity.'}`);
+              return;
+            }
+
+            if (res.data.length === 0) {
+              await interaction.editReply(`No activity in **${resolved.name}** yet.`);
+              return;
+            }
+
+            const lines = res.data.map((entry: any) => {
+              const unix = Math.floor(new Date(entry.createdAt).getTime() / 1000);
+              const sign = entry.delta > 0 ? '+' : '';
+              return `<t:${unix}:R> **${entry.username}** ${sign}${entry.delta} ${entry.itemName} → ${entry.projectName} (now ${entry.newTotal})`;
+            });
+
+            const embed = new EmbedBuilder()
+              .setColor(0x5b8def)
+              .setTitle(`Activity — ${resolved.name}`)
+              .setDescription(lines.join('\n').slice(0, 4000))
+              .setFooter({ text: 'Magpie Industries — Wikelo Tracker' })
+              .setTimestamp();
+
+            await interaction.editReply({ embeds: [embed] });
+            break;
+          }
+
+          case 'contributions': {
+            const groupName = interaction.options.getString('group_name');
+            await interaction.deferReply();
+
+            const resolved = await resolveGroup(discordId, groupName);
+            if ('error' in resolved) {
+              await interaction.editReply(resolved.error);
+              return;
+            }
+
+            const res = await apiCall(`/api/discord-bot/groups/${resolved.id}/contributions/${discordId}`);
+
+            if (!res.success) {
+              await interaction.editReply(`❌ ${res.error || 'Failed to fetch contributions.'}`);
+              return;
+            }
+
+            const { members } = res.data;
+            if (!members || members.length === 0) {
+              await interaction.editReply(`No contributions in **${resolved.name}** yet.`);
+              return;
+            }
+
+            const embeds: EmbedBuilder[] = [];
+            let current = new EmbedBuilder()
+              .setColor(0x5b8def)
+              .setTitle(`Contributions — ${resolved.name}`);
+            let fieldCount = 0;
+
+            for (const member of members) {
+              if (member.items.length === 0) continue;
+              const value = member.items
+                .map((i: any) => `${i.itemName}: **${i.netTotal}**`)
+                .join('\n')
+                .slice(0, 1024);
+
+              if (fieldCount >= 25) {
+                embeds.push(current);
+                current = new EmbedBuilder().setColor(0x5b8def);
+                fieldCount = 0;
+              }
+              current.addFields({ name: member.username, value, inline: true });
+              fieldCount++;
+            }
+
+            current.setFooter({ text: 'Magpie Industries — Wikelo Tracker' }).setTimestamp();
+            embeds.push(current);
+
+            await interaction.editReply({ embeds: embeds.slice(0, 10) });
+            break;
+          }
+
+          case 'leave': {
+            const groupName = interaction.options.getString('group_name');
+            await interaction.deferReply({ ephemeral: true });
+
+            const resolved = await resolveGroup(discordId, groupName);
+            if ('error' in resolved) {
+              await interaction.editReply(resolved.error);
+              return;
+            }
+
+            const res = await apiCall(`/api/discord-bot/groups/${resolved.id}/leave`, {
+              method: 'POST',
+              body: JSON.stringify({ discordId }),
+            });
+
+            if (res.success) {
+              await interaction.editReply(`✅ Left group **${res.data.groupName}**.`);
+            } else {
+              await interaction.editReply(`❌ ${res.error || 'Failed to leave group.'}`);
+            }
+            break;
+          }
+
+          case 'project': {
+            const projectName = interaction.options.getString('name', true);
+            const groupName = interaction.options.getString('group_name');
+            await interaction.deferReply();
+
+            const resolved = await resolveGroup(discordId, groupName);
+            if ('error' in resolved) {
+              await interaction.editReply(resolved.error);
+              return;
+            }
+
+            const res = await apiCall(`/api/discord-bot/groups/${resolved.id}/detail/${discordId}`);
+
+            if (!res.success) {
+              await interaction.editReply(`❌ ${res.error || 'Failed to fetch group details.'}`);
+              return;
+            }
+
+            const project = res.data.projects.find(
+              (p: any) => p.name.toLowerCase() === projectName.toLowerCase()
+            );
+
+            if (!project) {
+              const available = res.data.projects.map((p: any) => `• ${p.name}`).join('\n');
+              await interaction.editReply(
+                `❌ No project named "${projectName}" in **${resolved.name}**.${available ? `\n\nAvailable projects:\n${available}` : ''}`
+              );
+              return;
+            }
+
+            const materialLines = project.materials.map((m: any) => {
+              const done = m.collected >= m.required;
+              return `${done ? '✅' : '⬜'} ${m.itemName}: **${m.collected}/${m.required}**`;
+            });
+
+            const embed = new EmbedBuilder()
+              .setColor(0x5b8def)
+              .setTitle(`${project.name} — ${project.progress}%`)
+              .setDescription(
+                `Status: \`${project.status}\`\nGroup: **${resolved.name}**\n\n${materialLines.join('\n').slice(0, 3900)}`
+              )
+              .setFooter({ text: 'Magpie Industries — Wikelo Tracker' })
+              .setTimestamp();
+
+            await interaction.editReply({ embeds: [embed] });
+            break;
+          }
         }
         return;
       }
@@ -465,6 +718,49 @@ export const wikeloCommand: Command = {
           embeds.push(lastEmbed);
 
           await interaction.editReply({ embeds: embeds.slice(0, 10) });
+          break;
+        }
+
+        case 'project': {
+          const projectName = interaction.options.getString('name', true);
+          await interaction.deferReply();
+
+          const res = await apiCall(`/api/discord-bot/projects/${discordId}`);
+
+          if (!res.success) {
+            if (res.error === 'Account not linked') {
+              await interaction.editReply('❌ Account not linked. Use `/wikelo link <username>` first.');
+            } else {
+              await interaction.editReply(`❌ ${res.error || 'Failed to fetch projects.'}`);
+            }
+            return;
+          }
+
+          const project = res.data.find(
+            (p: any) => p.name.toLowerCase() === projectName.toLowerCase()
+          );
+
+          if (!project) {
+            const available = res.data.map((p: any) => `• ${p.name}`).join('\n');
+            await interaction.editReply(
+              `❌ No personal project named "${projectName}".${available ? `\n\nYour projects:\n${available}` : ''}`
+            );
+            return;
+          }
+
+          const materialLines = project.materials.map((m: any) => {
+            const done = m.collected >= m.required;
+            return `${done ? '✅' : '⬜'} ${m.itemName}: **${m.collected}/${m.required}**`;
+          });
+
+          const embed = new EmbedBuilder()
+            .setColor(0x5b8def)
+            .setTitle(`${project.name} — ${project.progress}%`)
+            .setDescription(materialLines.join('\n').slice(0, 3900) || 'No materials tracked.')
+            .setFooter({ text: 'Magpie Industries — Wikelo Tracker' })
+            .setTimestamp();
+
+          await interaction.editReply({ embeds: [embed] });
           break;
         }
 
